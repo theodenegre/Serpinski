@@ -1,16 +1,17 @@
 import matplotlib.pyplot as plt
 import random as rd
 from math import cos, sin, pi
-from time import time_ns
+from time import *
 import os
 import random
 from numpy import linspace
 from winsound import Beep
+import turtle
 
 
 
-def draw_polygon(ax, sommets):
-    polygon = plt.Polygon(sommets, closed=True, fill=None, edgecolor='black')
+def draw_polygon(ax, sommets):  # TODO repare this
+    polygon = plt.Polygon(sommets, fill=None, edgecolor='black')
     ax.add_patch(polygon)
 
 
@@ -75,7 +76,7 @@ def update_plot(i, points_list, ax):
     ax.set_title(f'Polygon with {n_sides} sides and {len(points)} points')
 
 
-def dessiner_arbre(x, y, angle, longueur, profondeur, ax, n=5):
+def dessiner_arbre(x, y, angle, longueur, profondeur, ax, n=5, deno=2):
     """
     Dessine un arbre de n branches et de profondeur iter (niveau de récursion)
     avec matplotlib
@@ -85,11 +86,114 @@ def dessiner_arbre(x, y, angle, longueur, profondeur, ax, n=5):
         y2 = y + longueur * sin(angle)
 
         # Dessine la branche
-        ax.plot([x, x2], [y, y2], color='black', lw=0.1)
+        ax.plot([x, x2], [y, y2], color='black', lw=0.3)
 
         for branch in range(n):
             angle2 = angle + (branch - n // 2) * 2 * pi / n
-            dessiner_arbre(x2, y2, angle2, longueur / 2, profondeur - 1, ax, n)
+            dessiner_arbre(x2, y2, angle2, longueur / deno, profondeur - 1, ax, n, deno)
+    ax.set_aspect('equal')
+    ax.axis('off')
+
+
+
+def dessiner_arbre_clean(x, y, angle, longueur, profondeur, ax, n=5, deno=2):
+    """
+    Dessine un arbre de n branches et de profondeur iter (niveau de récursion)
+    avec matplotlib
+    """
+    if profondeur > 0:
+        # Dessine la branche, mais ignore le premier quart et le dernier quart
+        x2 = x + longueur * cos(angle)
+        y2 = y + longueur * sin(angle)
+        # quart point
+        x3 = x + longueur * cos(angle) / 4
+        y3 = y + longueur * sin(angle) / 4
+        # trois quart point
+        x4 = x + longueur * cos(angle) * 3 / 4
+        y4 = y + longueur * sin(angle) * 3 / 4
+
+        ax.plot([x3, x4], [y3, y4], color='black', lw=0.3)
+
+
+        for branch in range(n):
+            angle2 = angle + (branch - n // 2) * 2 * pi / n
+            dessiner_arbre_clean(x2, y2, angle2, longueur / deno, profondeur - 1, ax, n, deno)
+    ax.set_aspect('equal')
+    ax.axis('off')
+
+def dessiner_arbre_variante(x, y, angle, longueur, profondeur, ax, n=5, deno=2):
+    """
+    Dessine un arbre de n branches et de profondeur iter (niveau de récursion)
+    avec matplotlib
+    """
+    if profondeur > 0:
+        x2 = x + longueur * cos(angle)
+        y2 = y + longueur * sin(angle)
+
+        # Dessine la branche
+        ax.plot([x, x2], [y, y2], color='black', lw=0.3)
+
+        for branch in range(n):
+            angle2 = angle + (branch - n / 2) * 2 * pi / n
+            dessiner_arbre(x2, y2, angle2, longueur / deno, profondeur - 1,
+                           ax, n, deno)
+    ax.set_aspect('equal')
+    ax.axis('off')
+
+
+def turtle_dessiner_arbre(x, y, angle, longueur, profondeur, tortue, n=5, deno=2):
+    """
+    Dessine un arbre de n branches et de profondeur iter (niveau de récursion)
+    avec turtle
+    """
+    if profondeur > 0:
+        x2 = x + longueur * cos(angle)
+        y2 = y + longueur * sin(angle)
+
+        # Dessine la branche
+        tortue.goto(x2, y2)
+
+        for branch in range(n):
+            angle2 = angle + (branch - n // 2) * 2 * pi / n
+            turtle_dessiner_arbre(x2, y2, angle2, longueur / deno, profondeur - 1, tortue, n, deno)
+
+
+def turtle_dessiner_arbre_demi_tour(x, y, angle, longueur, profondeur, tortue, n=5, deno=2):
+    """
+    Dessine un arbre de n branches et de profondeur iter (niveau de récursion)
+    avec turtle mais retourne sur ses pas à chaque étape
+    """
+    if profondeur > 0:
+        x2 = x + longueur * cos(angle)
+        y2 = y + longueur * sin(angle)
+
+        # Dessine la branche
+        tortue.goto(x2, y2)
+
+        for branch in range(n):
+            angle2 = angle + (branch - n // 2) * 2 * pi / n
+            turtle_dessiner_arbre_demi_tour(x2, y2, angle2, longueur / deno, profondeur - 1, tortue, n, deno)
+        tortue.goto(x, y)
+
+
+def serpinski_pentagone(x, y, size, iter, ax):  # TODO généraliser pour les polygones
+    if iter == 0:
+        # fait un pentagone remplis
+        for i in range(5): # TODO opti avec un seul fill
+            x1 = x + size * cos(2 * pi * i / 5)
+            y1 = y + size * sin(2 * pi * i / 5)
+            x2 = x + size * cos(2 * pi * (i + 1) / 5)
+            y2 = y + size * sin(2 * pi * (i + 1) / 5)
+            x3 = x + size * cos(2 * pi * (i + 2) / 5)
+            y3 = y + size * sin(2 * pi * (i + 2) / 5)
+            ax.fill([x, x1, x2, x3], [y, y1, y2, y3], color='black', alpha=0.05)
+    else:
+        # a mi-distance entre le point actuel et chacun des sommets
+        # dessiser un serpinski_pentagone pour chaque sommet
+        for i in range(5):
+            x1 = x + size * cos(2 * pi * i / 5 + pi/2)
+            y1 = y + size * sin(2 * pi * i / 5 + pi/2)
+            serpinski_pentagone(x1, y1, size / 2, iter - 1, ax)
 
 
 def generate(size, n_iter: int, nbr_sides, deno, point_size):
@@ -148,7 +252,7 @@ def brute_force():
 
 def done():
     """Thanks copilot"""
-    mult = 7
+    mult = 3
     Beep(440, int(mult * 50))
     Beep(440, int(mult * 50))
     Beep(440, int(mult * 50))
@@ -161,5 +265,26 @@ def done():
 
 
 if __name__ == '__main__':
-    generate(1, 25_000_000, 6, 2, 1e-3)
-    done()
+    ax, fig = plt.subplots()
+
+    # generate(1, 25_000_000, 6, 2, 1e-3)
+    start = time_ns()
+    # affiche, l'heure de début
+    print(f"started at : {ctime()}")
+    # dessiner_arbre(0, 0, pi / 2, 100, 7, plt.gca(), 5, (1+5**0.5)/2)
+    # dessiner_arbre(0, 0, pi / 2, 100, 6, plt.gca(), 5, 2)
+    # dessiner_arbre_clean(0, 0, pi / 2, 100, 8, plt.gca(), 5, 2) # 341 seconds for 7 iterations (au moins 2h pour 8)
+    # dessiner_arbre_variante(0, 0, pi / 2, 100, 6, plt.gca(), 5, 2)
+    serpinski_pentagone(0, 0, 100, 7, plt.gca())
+    # t = turtle.Turtle()
+    # t.speed(0)
+    # t.hideturtle()
+    # turtle_dessiner_arbre(0, -300, pi / 2, 300, 6, t, 5, 2) # 1593 seconds for 8 iterations
+    # turtle_dessiner_arbre_demi_tour(0, -300, pi / 2, 300, 7, t, 5,  2)  # 3246 seconds for 8 iterations
+    print((time_ns() - start) / 1e9)
+    # turtle.done()
+    # rends les axes egaux, ...
+    plt.gca().set_aspect('equal')
+    plt.gca().axis('off')
+    plt.show()
+    # done()
