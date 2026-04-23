@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import random as rd
-from math import cos, sin, pi
+from math import cos, sin, pi, radians
 from time import *
 import os
 import random
@@ -141,24 +141,43 @@ def dessiner_arbre_variante(x, y, angle, longueur, profondeur, ax, n=5, deno=2):
     ax.axis('off')
 
 
-def turtle_dessiner_arbre(x, y, angle, longueur, profondeur, tortue, n=5, deno=2):
+def turtle_dessiner_arbre(x, y, angle, longueur, profondeur, tortue, n=5, deno=2.):
     """
     Dessine un arbre de n branches et de profondeur iter (niveau de récursion)
     avec turtle
     """
-    if profondeur > 0:
-        x2 = x + longueur * cos(angle)
-        y2 = y + longueur * sin(angle)
+    def get_points(x, y, angle, longueur, profondeur, n, deno):
+        points = []
+        if profondeur > 0:
+            x2 = x + longueur * cos(angle)
+            y2 = y + longueur * sin(angle)
+            points.append((x2, y2))
+            for branch in range(n):
+                angle2 = angle + (branch - n // 2) * 2 * pi / n
+                points.extend(get_points(x2, y2, angle2, longueur / deno, profondeur - 1, n, deno))
+        return points
 
-        # Dessine la branche
-        tortue.goto(x2, y2)
+    points = get_points(x, y, angle, longueur, profondeur, n, deno)
+    tortue.penup()
+    for i, point in enumerate(points):
+        tortue.goto(point)
+        # Calculate color based on the index of the point
+        colors = [(1, 0, 0), (1, 1, 0)]
+        color_index = int(i / len(points) * len(colors))
+        # Interpolate between the two colors
+        r1, g1, b1 = colors[color_index]
+        r2, g2, b2 = colors[(color_index + 1) % len(colors)]
+        ratio = (i % (len(points) // len(colors))) / (len(points) // len(colors))
+        r = r1 + (r2 - r1) * ratio
+        g = g1 + (g2 - g1) * ratio
+        b = b1 + (b2 - b1) * ratio
+        # Set the color and draw the line
+        tortue.pencolor(r, g, b)
+        tortue.pendown()
+    tortue.penup()
 
-        for branch in range(n):
-            angle2 = angle + (branch - n // 2) * 2 * pi / n
-            turtle_dessiner_arbre(x2, y2, angle2, longueur / deno, profondeur - 1, tortue, n, deno)
 
-
-def turtle_dessiner_arbre_demi_tour(x, y, angle, longueur, profondeur, tortue, n=5, deno=2):
+def turtle_dessiner_arbre_demi_tour(x, y, angle, longueur, profondeur, tortue, n=5, deno=2.):
     """
     Dessine un arbre de n branches et de profondeur iter (niveau de récursion)
     avec turtle mais retourne sur ses pas à chaque étape
@@ -176,24 +195,19 @@ def turtle_dessiner_arbre_demi_tour(x, y, angle, longueur, profondeur, tortue, n
         tortue.goto(x, y)
 
 
-def serpinski_pentagone(x, y, size, iter, ax):  # TODO généraliser pour les polygones
+def serpinski_polygone(x, y, size, n_sides, iter, deno, ax, alpha=0.5, lw=0.):
     if iter == 0:
-        # fait un pentagone remplis
-        for i in range(5): # TODO opti avec un seul fill
-            x1 = x + size * cos(2 * pi * i / 5)
-            y1 = y + size * sin(2 * pi * i / 5)
-            x2 = x + size * cos(2 * pi * (i + 1) / 5)
-            y2 = y + size * sin(2 * pi * (i + 1) / 5)
-            x3 = x + size * cos(2 * pi * (i + 2) / 5)
-            y3 = y + size * sin(2 * pi * (i + 2) / 5)
-            ax.fill([x, x1, x2, x3], [y, y1, y2, y3], color='black', alpha=0.05)
+        points = [(x + size * cos(2 * pi * i / n_sides + pi/2),
+                   y + size * sin(2 * pi * i / n_sides + pi/2))
+                  for i in range(n_sides)]
+        ax.fill(*zip(*points), color='black', alpha=alpha, lw=lw)
     else:
         # a mi-distance entre le point actuel et chacun des sommets
-        # dessiser un serpinski_pentagone pour chaque sommet
-        for i in range(5):
-            x1 = x + size * cos(2 * pi * i / 5 + pi/2)
-            y1 = y + size * sin(2 * pi * i / 5 + pi/2)
-            serpinski_pentagone(x1, y1, size / 2, iter - 1, ax)
+        # dessiser un serpinski_polygone pour chaque sommet
+        for i in range(n_sides):
+            x1 = x + size * cos(2 * pi * i / n_sides + pi/2)
+            y1 = y + size * sin(2 * pi * i / n_sides + pi/2)
+            serpinski_polygone(x1, y1, size / deno, n_sides, iter - 1, deno, ax, alpha, lw)
 
 
 def generate(size, n_iter: int, nbr_sides, deno, point_size):
@@ -266,25 +280,25 @@ def done():
 
 if __name__ == '__main__':
     ax, fig = plt.subplots()
+    plt.gca().set_aspect('equal')
+    plt.gca().axis('off')
 
     # generate(1, 25_000_000, 6, 2, 1e-3)
     start = time_ns()
     # affiche, l'heure de début
     print(f"started at : {ctime()}")
     # dessiner_arbre(0, 0, pi / 2, 100, 7, plt.gca(), 5, (1+5**0.5)/2)
-    # dessiner_arbre(0, 0, pi / 2, 100, 6, plt.gca(), 5, 2)
-    # dessiner_arbre_clean(0, 0, pi / 2, 100, 8, plt.gca(), 5, 2) # 341 seconds for 7 iterations (au moins 2h pour 8)
-    # dessiner_arbre_variante(0, 0, pi / 2, 100, 6, plt.gca(), 5, 2)
-    serpinski_pentagone(0, 0, 100, 7, plt.gca())
+    # dessiner_arbre(0, 0, pi / 2, 100, 5, plt.gca(), 6, 2)
+    # dessiner_arbre_clean(0, 0, pi / 2, 100, 6, plt.gca(), 6, 2) # 341 seconds for 7 iterations (au moins 2h pour 8)
+    # dessiner_arbre_variante(0, 0, pi / 2, 100, 6, plt.gca(), 3, 2)
+    serpinski_polygone(0, 0, 100, 6, 5, 2*cos(pi/7), plt.gca(), alpha=.025, lw=0.) # deno spéciaux : 2, 1+2cos(pi/n), 2*cos(pi/n) où n est plus grand que le nombre de côtés
     # t = turtle.Turtle()
     # t.speed(0)
     # t.hideturtle()
-    # turtle_dessiner_arbre(0, -300, pi / 2, 300, 6, t, 5, 2) # 1593 seconds for 8 iterations
-    # turtle_dessiner_arbre_demi_tour(0, -300, pi / 2, 300, 7, t, 5,  2)  # 3246 seconds for 8 iterations
+    # turtle_dessiner_arbre(0, -300, pi / 2, 300, 7, t, 6, 2) # 1593 seconds for 8 iterations
+    # turtle_dessiner_arbre_demi_tour(0, -300, pi / 2, 300, 7, t, 5,  (1+5**.5)/2)  # 3246 seconds for 8 iterations
     print((time_ns() - start) / 1e9)
     # turtle.done()
     # rends les axes egaux, ...
-    plt.gca().set_aspect('equal')
-    plt.gca().axis('off')
     plt.show()
     # done()
